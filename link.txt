@@ -1,6 +1,0 @@
-https://ricardotecpro.github.io/portal_jekyll/
-
-Git scm
-
-git config --global user.email "Flamelblackdeath007@gmail.com"
-git config --global user.name "Flamel007"
