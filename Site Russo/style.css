@@ -1,0 +1,3454 @@
+/* =========================================================
+   PROJETO ORÁCULO — ARQUIVO CENTRAL
+   ESTADO NORMAL:
+   ARQUIVO MILITAR / TERMINAL SOVIÉTICO
+
+   ESTADO CORROMPIDO:
+   ATIVADO APÓS INSERÇÃO DO CÓDIGO
+
+   IMPORTANTE:
+   A corrupção NÃO é persistente.
+   O JS adiciona .corrupted-mode apenas durante a sessão.
+========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+
+/* =========================================================
+   CONFIGURAÇÕES GERAIS
+========================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background: #050505;
+    color: #b7b7b7;
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+
+    transition:
+        background 0.8s ease,
+        color 0.8s ease;
+}
+
+
+/* =========================================================
+   CRT / MONITOR ANTIGO
+========================================================= */
+
+body::before {
+    content: "";
+
+    position: fixed;
+    inset: 0;
+
+    background:
+        repeating-linear-gradient(
+            to bottom,
+            rgba(255,255,255,0.025) 0px,
+            rgba(255,255,255,0.025) 1px,
+            transparent 2px,
+            transparent 4px
+        );
+
+    pointer-events: none;
+
+    z-index: 9997;
+
+    transition:
+        background 0.5s ease;
+}
+
+
+body::after {
+    content: "";
+
+    position: fixed;
+    inset: 0;
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            transparent 45%,
+            rgba(0,0,0,0.8) 100%
+        );
+
+    pointer-events: none;
+
+    z-index: 9996;
+
+    transition:
+        background 0.8s ease;
+}
+
+
+/* =========================================================
+   RUÍDO
+========================================================= */
+
+#noise {
+    position: fixed;
+
+    inset: -50%;
+
+    opacity: 0.035;
+
+    background-image:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.7'/%3E%3C/svg%3E");
+
+    pointer-events: none;
+
+    z-index: 9998;
+
+    animation:
+        noiseMove 0.15s infinite;
+
+    transition:
+        opacity 0.5s ease;
+}
+
+
+@keyframes noiseMove {
+
+    0% {
+        transform: translate(0, 0);
+    }
+
+    25% {
+        transform: translate(2%, -2%);
+    }
+
+    50% {
+        transform: translate(-2%, 2%);
+    }
+
+    75% {
+        transform: translate(2%, 1%);
+    }
+
+    100% {
+        transform: translate(0, 0);
+    }
+}
+
+
+/* =========================================================
+   SCANLINES
+========================================================= */
+
+#scanlines {
+    position: fixed;
+
+    inset: 0;
+
+    pointer-events: none;
+
+    background:
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 3px,
+            rgba(255,255,255,0.015) 4px
+        );
+
+    z-index: 9999;
+
+    transition:
+        background 0.5s ease;
+}
+
+
+/* =========================================================
+   TELA DE CARREGAMENTO
+========================================================= */
+
+#loading-screen {
+    position: fixed;
+
+    inset: 0;
+
+    background: #020202;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    z-index: 10000;
+
+    transition:
+        opacity 1s ease,
+        visibility 1s ease,
+        background 0.5s ease;
+}
+
+
+.loading-content {
+
+    width: 440px;
+
+    max-width: 90%;
+
+    text-align: center;
+
+    color: #8c8c8c;
+
+    letter-spacing: 3px;
+}
+
+
+.loading-content p {
+    margin: 12px 0;
+}
+
+
+.loading-content p:first-child {
+
+    font-size: 12px;
+
+    animation:
+        loadingText 1.5s infinite;
+}
+
+
+.loading-bar {
+
+    width: 100%;
+
+    height: 12px;
+
+    border: 1px solid #555;
+
+    background: #111;
+
+    overflow: hidden;
+
+    position: relative;
+}
+
+
+#loading-progress {
+
+    height: 100%;
+
+    width: 0%;
+
+    background: #777;
+
+    box-shadow:
+        0 0 10px rgba(255,255,255,0.25);
+
+    transition:
+        width 0.1s linear;
+}
+
+
+#loading-percent {
+    font-size: 12px;
+}
+
+
+@keyframes loadingText {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.45;
+    }
+}
+
+
+/* =========================================================
+   CONTEÚDO PRINCIPAL
+========================================================= */
+
+#main-content {
+
+    min-height: 100vh;
+
+    opacity: 0;
+
+    transition:
+        opacity 1.5s ease;
+}
+
+
+#main-content.visible {
+    opacity: 1;
+}
+
+
+/* =========================================================
+   CABEÇALHO
+========================================================= */
+
+.site-header {
+
+    height: 90px;
+
+    border-bottom: 1px solid #333;
+
+    display: grid;
+
+    grid-template-columns: 1fr 2fr 1fr;
+
+    align-items: center;
+
+    padding: 0 35px;
+
+    background:
+        linear-gradient(
+            to bottom,
+            #111,
+            #080808
+        );
+
+    box-shadow:
+        0 5px 20px rgba(0,0,0,0.7);
+
+    transition:
+        background 0.6s ease,
+        border-color 0.6s ease,
+        box-shadow 0.6s ease;
+}
+
+
+.header-left,
+.header-right {
+
+    font-size: 11px;
+
+    color: #666;
+
+    letter-spacing: 1px;
+
+    transition:
+        color 0.5s ease;
+}
+
+
+.header-right {
+    text-align: right;
+}
+
+
+.header-center {
+    text-align: center;
+}
+
+
+.header-center h1 {
+
+    font-size: 23px;
+
+    letter-spacing: 7px;
+
+    color: #aaa;
+
+    text-shadow:
+        0 0 8px rgba(255,255,255,0.15);
+
+    transition:
+        color 0.5s ease,
+        text-shadow 0.5s ease;
+}
+
+
+.header-center p {
+
+    margin-top: 6px;
+
+    font-size: 10px;
+
+    letter-spacing: 4px;
+
+    color: #555;
+
+    transition:
+        color 0.5s ease;
+}
+
+
+/* =========================================================
+   LUZ DE STATUS
+========================================================= */
+
+.status-light {
+
+    display: inline-block;
+
+    width: 8px;
+    height: 8px;
+
+    border-radius: 50%;
+
+    background: #777;
+
+    margin-right: 7px;
+
+    box-shadow:
+        0 0 8px #777;
+
+    animation:
+        statusBlink 2s infinite;
+
+    transition:
+        background 0.4s ease,
+        box-shadow 0.4s ease;
+}
+
+
+@keyframes statusBlink {
+
+    0%,
+    80%,
+    100% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 0.2;
+    }
+}
+
+
+/* =========================================================
+   LAYOUT PRINCIPAL
+========================================================= */
+
+.archive-container {
+
+    display: grid;
+
+    grid-template-columns: 245px 1fr;
+
+    min-height:
+        calc(100vh - 140px);
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.sidebar {
+
+    border-right: 1px solid #292929;
+
+    background: #080808;
+
+    padding: 25px 18px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    transition:
+        background 0.6s ease,
+        border-color 0.6s ease;
+}
+
+
+.classification {
+
+    border: 1px solid #333;
+
+    padding: 13px;
+
+    margin-bottom: 30px;
+
+    text-align: center;
+
+    font-size: 10px;
+
+    color: #666;
+
+    background:
+        linear-gradient(
+            135deg,
+            #0c0c0c,
+            #080808
+        );
+
+    transition:
+        background 0.5s ease,
+        border-color 0.5s ease,
+        color 0.5s ease;
+}
+
+
+.classification strong {
+
+    display: block;
+
+    margin-top: 8px;
+
+    letter-spacing: 4px;
+
+    color: #aaa;
+
+    transition:
+        color 0.5s ease;
+}
+
+
+/* =========================================================
+   MENU
+========================================================= */
+
+.sidebar nav {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+}
+
+
+.menu-button {
+
+    position: relative;
+
+    width: 100%;
+
+    border: none;
+
+    border-left: 2px solid transparent;
+
+    background: transparent;
+
+    color: #666;
+
+    padding: 15px;
+
+    text-align: left;
+
+    font-family: inherit;
+
+    font-size: 11px;
+
+    letter-spacing: 1px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s,
+        color 0.2s,
+        border 0.2s,
+        transform 0.2s;
+}
+
+
+.menu-button::before {
+
+    content: ">";
+
+    position: absolute;
+
+    left: 5px;
+
+    opacity: 0;
+
+    transition:
+        opacity 0.2s;
+}
+
+
+.menu-button:hover {
+
+    background: #151515;
+
+    color: #aaa;
+
+    border-left-color: #777;
+
+    padding-left: 20px;
+}
+
+
+.menu-button:hover::before {
+    opacity: 1;
+}
+
+
+.menu-button.active {
+
+    background: #151515;
+
+    color: #ccc;
+
+    border-left-color: #aaa;
+}
+
+
+/* =========================================================
+   RODAPÉ SIDEBAR
+========================================================= */
+
+.sidebar-footer {
+
+    margin-top: auto;
+
+    padding-top: 20px;
+
+    border-top: 1px solid #222;
+
+    font-size: 9px;
+
+    color: #444;
+
+    line-height: 2;
+
+    letter-spacing: 0.5px;
+
+    transition:
+        color 0.5s ease,
+        border-color 0.5s ease;
+}
+
+
+/* =========================================================
+   CONTEÚDO
+========================================================= */
+
+.content {
+
+    padding: 45px;
+
+    max-width: 1150px;
+
+    width: 100%;
+
+    margin: auto;
+}
+
+
+.content-section {
+
+    display: none;
+
+    animation:
+        sectionAppear 0.5s ease;
+}
+
+
+.active-section {
+    display: block;
+}
+
+
+@keyframes sectionAppear {
+
+    from {
+        opacity: 0;
+        transform:
+            translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform:
+            translateY(0);
+    }
+}
+
+
+.content h2 {
+
+    color: #aaa;
+
+    font-size: 22px;
+
+    letter-spacing: 5px;
+
+    margin-bottom: 30px;
+
+    border-bottom: 1px solid #292929;
+
+    padding-bottom: 15px;
+
+    transition:
+        color 0.5s ease,
+        border-color 0.5s ease;
+}
+
+
+/* =========================================================
+   AVISO
+========================================================= */
+
+.warning {
+
+    border: 1px solid #444;
+
+    background: #0b0b0b;
+
+    padding: 20px;
+
+    display: flex;
+
+    gap: 18px;
+
+    margin-bottom: 30px;
+
+    color: #777;
+
+    position: relative;
+
+    overflow: hidden;
+
+    transition:
+        background 0.5s ease,
+        border-color 0.5s ease,
+        color 0.5s ease;
+}
+
+
+.warning::after {
+
+    content: "CLASSIFIED";
+
+    position: absolute;
+
+    right: 15px;
+
+    bottom: 8px;
+
+    font-size: 8px;
+
+    letter-spacing: 3px;
+
+    color: #222;
+
+    transition:
+        color 0.5s ease;
+}
+
+
+.warning > span {
+
+    font-size: 28px;
+
+    color: #999;
+}
+
+
+.warning strong {
+
+    color: #aaa;
+
+    font-size: 12px;
+
+    letter-spacing: 3px;
+}
+
+
+.warning p {
+
+    margin-top: 8px;
+
+    font-size: 11px;
+}
+
+
+/* =========================================================
+   TERMINAL
+========================================================= */
+
+.terminal-box {
+
+    border: 1px solid #292929;
+
+    background: #070707;
+
+    margin-bottom: 30px;
+
+    box-shadow:
+        inset 0 0 30px rgba(0,0,0,0.8);
+
+    transition:
+        background 0.5s ease,
+        border-color 0.5s ease,
+        box-shadow 0.5s ease;
+}
+
+
+.terminal-header {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    padding: 12px 18px;
+
+    background: #101010;
+
+    border-bottom: 1px solid #292929;
+
+    font-size: 10px;
+
+    color: #555;
+
+    letter-spacing: 1px;
+
+    transition:
+        background 0.5s ease,
+        border-color 0.5s ease,
+        color 0.5s ease;
+}
+
+
+.terminal-body {
+
+    padding: 28px;
+
+    line-height: 2;
+
+    font-size: 12px;
+
+    color: #777;
+
+    transition:
+        color 0.5s ease;
+}
+
+
+.terminal-body p {
+    margin-bottom: 4px;
+}
+
+
+.classified-text {
+
+    color: #555;
+
+    letter-spacing: 2px;
+
+    transition:
+        color 0.3s,
+        text-shadow 0.3s;
+}
+
+
+.classified-text:hover {
+
+    color: #aaa;
+
+    text-shadow:
+        0 0 6px rgba(255,255,255,0.15);
+
+    cursor: default;
+}
+
+
+/* =========================================================
+   ARQUIVO DESTACADO
+========================================================= */
+
+.file-card {
+
+    border: 1px solid #333;
+
+    background: #0a0a0a;
+
+    display: flex;
+
+    align-items: center;
+
+    padding: 20px;
+
+    gap: 20px;
+
+    position: relative;
+
+    transition:
+        border 0.3s,
+        background 0.3s,
+        transform 0.3s,
+        box-shadow 0.3s;
+}
+
+
+.file-card:hover {
+
+    border-color: #666;
+
+    background: #0e0e0e;
+
+    transform:
+        translateX(4px);
+}
+
+
+.file-icon {
+
+    font-size: 35px;
+
+    filter: grayscale(1);
+
+    opacity: 0.7;
+}
+
+
+.file-info {
+    flex: 1;
+}
+
+
+.file-info h2 {
+
+    border: none;
+
+    padding: 0;
+
+    margin:
+        0 0 8px;
+
+    font-size: 14px;
+
+    letter-spacing: 2px;
+}
+
+
+.file-info p {
+
+    font-size: 10px;
+
+    color: #555;
+
+    margin-bottom: 4px;
+}
+
+
+.file-status {
+    color: #777 !important;
+}
+
+
+.file-card button {
+
+    background: #151515;
+
+    border: 1px solid #444;
+
+    color: #999;
+
+    padding: 10px 20px;
+
+    font-family: inherit;
+
+    font-size: 10px;
+
+    letter-spacing: 1px;
+
+    cursor: pointer;
+
+    transition:
+        0.2s;
+}
+
+
+.file-card button:hover {
+
+    background: #222;
+
+    color: white;
+
+    border-color: #888;
+}
+
+
+/* =========================================================
+   DOCUMENTOS
+========================================================= */
+
+.document-list {
+
+    display: flex;
+
+    flex-direction: column;
+
+    border-top: 1px solid #292929;
+}
+
+
+.document {
+
+    display: grid;
+
+    grid-template-columns:
+        80px
+        1fr
+        150px;
+
+    padding: 18px;
+
+    border-bottom: 1px solid #222;
+
+    color: #666;
+
+    font-size: 11px;
+
+    transition:
+        0.2s;
+}
+
+
+.document:hover {
+
+    background: #111;
+
+    color: #aaa;
+
+    padding-left: 24px;
+}
+
+
+.document span:first-child {
+
+    color: #444;
+
+    letter-spacing: 1px;
+}
+
+
+.document span:last-child {
+
+    text-align: right;
+
+    color: #444;
+
+    letter-spacing: 1px;
+}
+
+
+/* =========================================================
+   PESSOAL
+========================================================= */
+
+.person-card {
+
+    display: flex;
+
+    gap: 25px;
+
+    border: 1px solid #292929;
+
+    padding: 25px;
+
+    background: #090909;
+
+    margin-bottom: 18px;
+
+    position: relative;
+
+    transition:
+        background 0.5s ease,
+        border-color 0.5s ease,
+        transform 0.3s ease;
+}
+
+
+.person-card::before {
+
+    content: "PERSONNEL FILE";
+
+    position: absolute;
+
+    top: 8px;
+
+    right: 12px;
+
+    font-size: 7px;
+
+    letter-spacing: 2px;
+
+    color: #292929;
+}
+
+
+.person-photo {
+
+    width: 100px;
+
+    height: 120px;
+
+    border: 1px solid #333;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    color: #444;
+
+    font-size: 20px;
+
+    background:
+        repeating-linear-gradient(
+            0deg,
+            #090909,
+            #090909 2px,
+            #0d0d0d 3px
+        );
+
+    transition:
+        background 0.5s ease,
+        border-color 0.5s ease,
+        color 0.5s ease;
+}
+
+
+.person-card h3 {
+
+    color: #aaa;
+
+    font-size: 14px;
+
+    margin-bottom: 15px;
+
+    letter-spacing: 2px;
+}
+
+
+.person-card p {
+
+    color: #555;
+
+    font-size: 10px;
+
+    margin-bottom: 7px;
+}
+
+
+/* =========================================================
+   PROJETO ORÁCULO
+========================================================= */
+
+.project {
+
+    border: 1px solid #292929;
+
+    padding: 28px;
+
+    background: #090909;
+
+    position: relative;
+
+    margin-bottom: 20px;
+
+    box-shadow:
+        inset 0 0 25px rgba(0,0,0,0.5);
+
+    transition:
+        border-color 0.4s ease,
+        background 0.4s ease,
+        box-shadow 0.4s ease,
+        transform 0.3s ease;
+}
+
+
+.project::before {
+
+    content: "СОВЕРШЕННО СЕКРЕТНО";
+
+    position: absolute;
+
+    top: 12px;
+
+    right: 15px;
+
+    font-size: 8px;
+
+    letter-spacing: 2px;
+
+    color: #292929;
+
+    transition:
+        color 0.4s ease;
+}
+
+
+.project h3 {
+
+    color: #999;
+
+    font-size: 14px;
+
+    margin-bottom: 22px;
+
+    letter-spacing: 2px;
+
+    border-bottom: 1px solid #222;
+
+    padding-bottom: 12px;
+}
+
+
+.project p {
+
+    color: #555;
+
+    font-size: 11px;
+
+    margin-bottom: 15px;
+
+    line-height: 1.8;
+}
+
+
+.project p strong {
+    color: #888;
+}
+
+
+.redacted {
+
+    color: #777 !important;
+
+    letter-spacing: 5px;
+
+    overflow: hidden;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   DADOS DE LOCALIZAÇÃO
+========================================================= */
+
+#locations .project {
+
+    border-left:
+        2px solid #444;
+}
+
+
+#locations .project h3 {
+
+    font-size: 15px;
+
+    color: #aaa;
+}
+
+
+#locations .project p {
+
+    font-size: 11px;
+}
+
+
+#locations .project p:nth-of-type(1),
+#locations .project p:nth-of-type(2) {
+
+    color: #777;
+
+    letter-spacing: 1px;
+}
+
+
+#locations .project h3:nth-of-type(2) {
+
+    margin-top: 35px;
+
+    color: #888;
+
+    letter-spacing: 3px;
+}
+
+
+#locations .project p:last-child {
+
+    color: #444;
+
+    font-size: 9px;
+
+    letter-spacing: 1px;
+}
+
+
+/* =========================================================
+   ÁREA RESTRITA
+========================================================= */
+
+.locked {
+
+    text-align: center;
+
+    border: 1px solid #333;
+
+    padding: 60px 30px;
+
+    background:
+        radial-gradient(
+            circle,
+            #101010,
+            #070707
+        );
+
+    position: relative;
+
+    transition:
+        background 0.5s ease,
+        border-color 0.5s ease,
+        box-shadow 0.5s ease;
+}
+
+
+.locked::before {
+
+    content: "LEVEL  ████";
+
+    position: absolute;
+
+    top: 15px;
+
+    left: 20px;
+
+    font-size: 8px;
+
+    color: #333;
+
+    letter-spacing: 2px;
+}
+
+
+.locked::after {
+
+    content: "AUTHORIZED PERSONNEL ONLY";
+
+    position: absolute;
+
+    bottom: 15px;
+
+    right: 20px;
+
+    font-size: 7px;
+
+    color: #292929;
+
+    letter-spacing: 2px;
+}
+
+
+.lock-symbol {
+
+    font-size: 50px;
+
+    margin-bottom: 25px;
+
+    filter: grayscale(1);
+
+    opacity: 0.5;
+
+    transition:
+        filter 0.5s ease,
+        opacity 0.5s ease;
+}
+
+
+.locked p {
+
+    color: #555;
+
+    font-size: 11px;
+
+    margin-bottom: 10px;
+
+    letter-spacing: 2px;
+}
+
+
+#secret-code {
+
+    margin-top: 25px;
+
+    width: 280px;
+
+    padding: 12px;
+
+    background: #050505;
+
+    border: 1px solid #333;
+
+    color: #aaa;
+
+    font-family: inherit;
+
+    text-align: center;
+
+    outline: none;
+}
+
+
+#secret-code:focus {
+
+    border-color: #777;
+
+    box-shadow:
+        0 0 10px
+        rgba(255,255,255,0.05);
+}
+
+
+#submit-code {
+
+    margin-left: 8px;
+
+    padding: 12px 18px;
+
+    background: #111;
+
+    border: 1px solid #444;
+
+    color: #777;
+
+    font-family: inherit;
+
+    cursor: pointer;
+
+    transition:
+        0.2s;
+}
+
+
+#submit-code:hover {
+
+    color: #aaa;
+
+    border-color: #777;
+
+    background: #181818;
+}
+
+
+#code-message {
+
+    min-height: 20px;
+
+    margin-top: 20px;
+
+    color: #777;
+
+    transition:
+        color 0.3s,
+        opacity 0.3s;
+}
+
+
+#code-message::after {
+
+    content: "";
+
+    display: block;
+
+    height: 1px;
+
+    width: 100px;
+
+    margin: 8px auto 0;
+
+    background: #252525;
+}
+
+
+/* =========================================================
+   ARQUIVO SECRETO
+========================================================= */
+
+#secret-content {
+
+    margin-top: 35px;
+
+    animation:
+        secretArchiveAppear 0.8s ease;
+}
+
+
+@keyframes secretArchiveAppear {
+
+    from {
+
+        opacity: 0;
+
+        transform:
+            translateY(12px);
+    }
+
+    to {
+
+        opacity: 1;
+
+        transform:
+            translateY(0);
+    }
+}
+
+
+#secret-content .terminal-box {
+
+    border-color: #393939;
+
+    box-shadow:
+
+        inset 0 0 25px rgba(0,0,0,0.8),
+
+        0 0 20px
+        rgba(255,255,255,0.02);
+}
+
+
+/* =========================================================
+   REGISTRO CORROMPIDO
+========================================================= */
+
+.corrupted-record {
+
+    position: relative;
+
+    margin-top: 25px;
+
+    border-color: #3a1717;
+
+    background:
+        linear-gradient(
+            90deg,
+            #090707,
+            #0b0808,
+            #090707
+        );
+
+    overflow: hidden;
+
+    transition:
+        border-color 0.3s,
+        transform 0.2s,
+        background 0.4s ease;
+}
+
+
+.corrupted-record::before {
+
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+    right: 0;
+
+    top: 45%;
+
+    height: 1px;
+
+    background:
+        rgba(130,20,20,0.35);
+
+    pointer-events: none;
+}
+
+
+.corrupted-record::after {
+
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+    bottom: 0;
+
+    left: 72%;
+
+    width: 1px;
+
+    background:
+        rgba(120,15,15,0.25);
+
+    pointer-events: none;
+}
+
+
+/* =========================================================
+   FOTO CORROMPIDA
+========================================================= */
+
+.corrupted-photo {
+
+    position: relative;
+
+    border-color: #351515;
+
+    color: #481818;
+
+    background:
+
+        repeating-linear-gradient(
+            0deg,
+            #090707,
+            #090707 3px,
+            #120909 4px,
+            #120909 5px
+        );
+
+    overflow: hidden;
+}
+
+
+.corrupted-photo::before {
+
+    content: "█";
+
+    position: absolute;
+
+    font-size: 55px;
+
+    color: #2b0d0d;
+
+    opacity: 0.8;
+}
+
+
+.corrupted-photo::after {
+
+    content: "ERROR";
+
+    position: absolute;
+
+    bottom: 7px;
+
+    font-size: 7px;
+
+    letter-spacing: 2px;
+
+    color: #521818;
+}
+
+
+/* =========================================================
+   NOME CORROMPIDO
+========================================================= */
+
+.corrupted-name {
+
+    color: #742323 !important;
+
+    letter-spacing: 3px;
+
+    text-shadow:
+        2px 0 rgba(120,20,20,0.35);
+}
+
+
+/* =========================================================
+   TEXTOS CORROMPIDOS
+========================================================= */
+
+.red-corruption {
+
+    color: #612020 !important;
+
+    font-size: 9px !important;
+
+    letter-spacing: 2px;
+
+    opacity: 0.75;
+
+    animation:
+        corruptedText 3s infinite;
+}
+
+
+@keyframes corruptedText {
+
+    0%,
+    85%,
+    100% {
+
+        opacity: 0.75;
+
+        transform:
+            translateX(0);
+    }
+
+    87% {
+
+        opacity: 0.25;
+
+        transform:
+            translateX(-2px);
+    }
+
+    89% {
+
+        opacity: 0.9;
+
+        transform:
+            translateX(2px);
+    }
+
+    91% {
+
+        opacity: 0.4;
+
+        transform:
+            translateX(0);
+    }
+}
+
+
+/* =========================================================
+   JANELA SECRETA
+========================================================= */
+
+#secret-overlay {
+
+    position: fixed;
+
+    inset: 0;
+
+    background:
+        rgba(0,0,0,0.88);
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    opacity: 0;
+
+    visibility: hidden;
+
+    transition:
+        opacity 0.3s,
+        visibility 0.3s;
+
+    z-index: 10001;
+}
+
+
+#secret-overlay.visible {
+
+    opacity: 1;
+
+    visibility: visible;
+}
+
+
+.secret-window {
+
+    width: 500px;
+
+    max-width: 90%;
+
+    border: 1px solid #666;
+
+    background: #080808;
+
+    box-shadow:
+        0 0 50px
+        rgba(255,255,255,0.05);
+
+    animation:
+        secretAppear 0.25s ease;
+}
+
+
+@keyframes secretAppear {
+
+    from {
+
+        transform:
+            scale(0.95);
+
+        opacity: 0;
+    }
+
+    to {
+
+        transform:
+            scale(1);
+
+        opacity: 1;
+    }
+}
+
+
+.secret-header {
+
+    height: 40px;
+
+    background: #151515;
+
+    border-bottom: 1px solid #333;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 15px;
+
+    color: #777;
+
+    font-size: 11px;
+}
+
+
+.secret-header button {
+
+    background: transparent;
+
+    border: none;
+
+    color: #666;
+
+    cursor: pointer;
+
+    font-family: inherit;
+}
+
+
+.secret-header button:hover {
+    color: white;
+}
+
+
+.secret-body {
+
+    padding: 35px;
+
+    text-align: center;
+
+    line-height: 2;
+
+    font-size: 11px;
+
+    color: #666;
+}
+
+
+.glitch-text {
+
+    color: #aaa;
+
+    font-size: 18px;
+
+    letter-spacing: 4px;
+
+    animation:
+        glitch 0.8s infinite;
+}
+
+
+@keyframes glitch {
+
+    0% {
+        transform: translate(0);
+        opacity: 1;
+    }
+
+    20% {
+        transform:
+            translate(-2px,1px);
+    }
+
+    40% {
+        transform:
+            translate(2px,-1px);
+    }
+
+    60% {
+        transform:
+            translate(-1px,0);
+
+        opacity: 0.7;
+    }
+
+    80% {
+        transform:
+            translate(1px,1px);
+    }
+
+    100% {
+        transform: translate(0);
+        opacity: 1;
+    }
+}
+
+
+/* =========================================================
+   GLITCH EVENTUAL
+========================================================= */
+
+.glitching {
+
+    animation:
+        screenGlitch
+        0.15s
+        steps(2)
+        infinite;
+}
+
+
+@keyframes screenGlitch {
+
+    0% {
+
+        transform:
+            translate(0);
+
+        filter: none;
+    }
+
+    25% {
+
+        transform:
+            translate(-3px,1px);
+
+        filter:
+            contrast(1.4);
+    }
+
+    50% {
+
+        transform:
+            translate(3px,-1px);
+
+        filter:
+            brightness(1.3);
+    }
+
+    75% {
+
+        transform:
+            translate(-1px,2px);
+
+        filter:
+            contrast(0.7);
+    }
+
+    100% {
+
+        transform:
+            translate(0);
+
+        filter: none;
+    }
+}
+
+
+/* =========================================================
+   DETALHES DE ARQUIVO
+========================================================= */
+
+.document::selection,
+.project::selection,
+.terminal-body::selection {
+
+    background: #777;
+
+    color: #000;
+}
+
+
+/* =========================================================
+   =========================================================
+   ESTADO CORROMPIDO
+   =========================================================
+   =========================================================
+
+   Esta seção só entra em funcionamento quando o JS adiciona:
+
+   body.classList.add("corrupted-mode");
+
+   Nada daqui é salvo.
+
+========================================================= */
+
+
+/* =========================================================
+   FUNDO CORROMPIDO
+========================================================= */
+
+body.corrupted-mode {
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            #160404 0%,
+            #080101 45%,
+            #020000 100%
+        );
+
+    color: #c94b4b;
+
+    animation:
+        corruptedBackground 4s infinite;
+}
+
+
+@keyframes corruptedBackground {
+
+    0%,
+    100% {
+        filter:
+            hue-rotate(0deg)
+            contrast(1);
+    }
+
+    50% {
+        filter:
+            hue-rotate(-8deg)
+            contrast(1.08);
+    }
+}
+
+
+/* =========================================================
+   CRT CORROMPIDO
+========================================================= */
+
+body.corrupted-mode::before {
+
+    background:
+        repeating-linear-gradient(
+            to bottom,
+            rgba(255,40,40,0.045) 0px,
+            rgba(255,40,40,0.045) 1px,
+            transparent 2px,
+            transparent 4px
+        );
+
+    animation:
+        corruptedScan 0.7s infinite;
+}
+
+
+@keyframes corruptedScan {
+
+    0%,
+    100% {
+        transform:
+            translateY(0);
+    }
+
+    50% {
+        transform:
+            translateY(1px);
+    }
+}
+
+
+body.corrupted-mode::after {
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            transparent 30%,
+            rgba(100,0,0,0.25) 65%,
+            rgba(0,0,0,0.9) 100%
+        );
+}
+
+
+body.corrupted-mode #noise {
+
+    opacity: 0.07;
+
+    animation:
+        corruptedNoise 0.08s infinite;
+}
+
+
+@keyframes corruptedNoise {
+
+    0% {
+        transform:
+            translate(0,0);
+    }
+
+    25% {
+        transform:
+            translate(-3%,2%);
+    }
+
+    50% {
+        transform:
+            translate(3%,-2%);
+    }
+
+    75% {
+        transform:
+            translate(-2%,-1%);
+    }
+
+    100% {
+        transform:
+            translate(0,0);
+    }
+}
+
+
+/* =========================================================
+   CABEÇALHO CORROMPIDO
+========================================================= */
+
+body.corrupted-mode .site-header {
+
+    background:
+        linear-gradient(
+            to bottom,
+            #180606,
+            #090202
+        );
+
+    border-bottom-color:
+        #541818;
+
+    box-shadow:
+        0 5px 30px
+        rgba(100,0,0,0.35);
+}
+
+
+body.corrupted-mode .header-left,
+body.corrupted-mode .header-right {
+
+    color:
+        #742626;
+}
+
+
+body.corrupted-mode .header-center h1 {
+
+    color:
+        #c43a3a;
+
+    text-shadow:
+        2px 0 #4d0000,
+        -2px 0 #190000,
+        0 0 12px
+        rgba(180,20,20,0.5);
+
+    animation:
+        corruptedTitle 1.8s infinite;
+}
+
+
+@keyframes corruptedTitle {
+
+    0%,
+    88%,
+    100% {
+
+        transform:
+            translate(0);
+
+        opacity: 1;
+    }
+
+    90% {
+
+        transform:
+            translate(-3px,1px);
+
+        opacity: 0.7;
+    }
+
+    92% {
+
+        transform:
+            translate(3px,-1px);
+
+        opacity: 0.9;
+    }
+}
+
+
+body.corrupted-mode .header-center p {
+
+    color:
+        #6e1b1b;
+}
+
+
+body.corrupted-mode .status-light {
+
+    background:
+        #b21f1f;
+
+    box-shadow:
+        0 0 12px
+        #b21f1f;
+}
+
+
+/* =========================================================
+   SIDEBAR CORROMPIDA
+========================================================= */
+
+body.corrupted-mode .sidebar {
+
+    background:
+        linear-gradient(
+            180deg,
+            #0c0202,
+            #070101
+        );
+
+    border-right-color:
+        #401010;
+}
+
+
+body.corrupted-mode .classification {
+
+    background:
+        linear-gradient(
+            135deg,
+            #160404,
+            #090202
+        );
+
+    border-color:
+        #501616;
+
+    color:
+        #762525;
+
+    box-shadow:
+        inset 0 0 20px
+        rgba(120,0,0,0.15);
+}
+
+
+body.corrupted-mode .classification strong {
+
+    color:
+        #b63131;
+
+    text-shadow:
+        0 0 8px
+        rgba(170,20,20,0.4);
+}
+
+
+body.corrupted-mode .menu-button {
+
+    color:
+        #692020;
+}
+
+
+body.corrupted-mode .menu-button:hover {
+
+    background:
+        #180505;
+
+    color:
+        #c33b3b;
+
+    border-left-color:
+        #a52b2b;
+}
+
+
+body.corrupted-mode .menu-button.active {
+
+    background:
+        #1b0505;
+
+    color:
+        #d34848;
+
+    border-left-color:
+        #bd2e2e;
+
+    box-shadow:
+        inset 0 0 15px
+        rgba(150,0,0,0.15);
+}
+
+
+body.corrupted-mode .sidebar-footer {
+
+    border-top-color:
+        #351010;
+
+    color:
+        #4f1717;
+}
+
+
+/* =========================================================
+   CONTEÚDO CORROMPIDO
+========================================================= */
+
+body.corrupted-mode .content h2 {
+
+    color:
+        #c03939;
+
+    border-bottom-color:
+        #4a1111;
+
+    text-shadow:
+        0 0 8px
+        rgba(150,0,0,0.3);
+}
+
+
+body.corrupted-mode .terminal-box {
+
+    background:
+        #090202;
+
+    border-color:
+        #4a1515;
+
+    box-shadow:
+
+        inset 0 0 30px
+        rgba(80,0,0,0.4),
+
+        0 0 20px
+        rgba(100,0,0,0.08);
+}
+
+
+body.corrupted-mode .terminal-header {
+
+    background:
+        #160404;
+
+    border-bottom-color:
+        #451111;
+
+    color:
+        #762525;
+}
+
+
+body.corrupted-mode .terminal-body {
+
+    color:
+        #914040;
+}
+
+
+body.corrupted-mode .warning {
+
+    background:
+        #120303;
+
+    border-color:
+        #641919;
+
+    color:
+        #853333;
+
+    box-shadow:
+        0 0 20px
+        rgba(100,0,0,0.1);
+}
+
+
+body.corrupted-mode .warning::after {
+
+    content:
+        "!!! SYSTEM CORRUPTED !!!";
+
+    color:
+        #571515;
+
+    animation:
+        warningBlink 1s infinite;
+}
+
+
+@keyframes warningBlink {
+
+    0%,
+    100% {
+        opacity: 0.4;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+
+body.corrupted-mode .warning strong {
+
+    color:
+        #c23a3a;
+}
+
+
+body.corrupted-mode .warning > span {
+
+    color:
+        #a42c2c;
+
+    text-shadow:
+        0 0 10px
+        rgba(180,0,0,0.5);
+}
+
+
+/* =========================================================
+   ARQUIVOS CORROMPIDOS
+========================================================= */
+
+body.corrupted-mode .file-card {
+
+    background:
+        linear-gradient(
+            90deg,
+            #100202,
+            #170404,
+            #0b0101
+        );
+
+    border-color:
+        #551717;
+
+    box-shadow:
+        0 0 15px
+        rgba(120,0,0,0.1);
+}
+
+
+body.corrupted-mode .file-card:hover {
+
+    background:
+        #1b0505;
+
+    border-color:
+        #a52d2d;
+
+    box-shadow:
+        0 0 25px
+        rgba(160,0,0,0.2);
+}
+
+
+body.corrupted-mode .file-card::after {
+
+    content:
+        "PCL // ERROR";
+
+    color:
+        #8d2424;
+
+    animation:
+        corruptedText 1.5s infinite;
+}
+
+
+body.corrupted-mode .file-info h2 {
+
+    color:
+        #bd3737;
+}
+
+
+body.corrupted-mode .file-info p {
+
+    color:
+        #752323;
+}
+
+
+body.corrupted-mode .file-status {
+
+    color:
+        #b42e2e !important;
+}
+
+
+body.corrupted-mode .file-card button {
+
+    background:
+        #160404;
+
+    border-color:
+        #631b1b;
+
+    color:
+        #a93232;
+}
+
+
+body.corrupted-mode .file-card button:hover {
+
+    background:
+        #250707;
+
+    color:
+        #e04a4a;
+
+    border-color:
+        #a52d2d;
+}
+
+
+/* =========================================================
+   DOCUMENTOS CORROMPIDOS
+========================================================= */
+
+body.corrupted-mode .document-list {
+
+    border-top-color:
+        #481111;
+}
+
+
+body.corrupted-mode .document {
+
+    border-bottom-color:
+        #321010;
+
+    color:
+        #722323;
+}
+
+
+body.corrupted-mode .document:hover {
+
+    background:
+        #150404;
+
+    color:
+        #c13b3b;
+}
+
+
+body.corrupted-mode .document span:first-child {
+
+    color:
+        #611b1b;
+}
+
+
+body.corrupted-mode .document span:last-child {
+
+    color:
+        #591717;
+}
+
+
+/* =========================================================
+   PROJETOS CORROMPIDOS
+========================================================= */
+
+body.corrupted-mode .project {
+
+    background:
+        #0d0202;
+
+    border-color:
+        #481313;
+
+    box-shadow:
+        inset 0 0 30px
+        rgba(100,0,0,0.12);
+}
+
+
+body.corrupted-mode .project::before {
+
+    content:
+        "████ ERROR ████";
+
+    color:
+        #571616;
+
+    animation:
+        corruptedText 2s infinite;
+}
+
+
+body.corrupted-mode .project:hover {
+
+    background:
+        #150404;
+
+    border-color:
+        #7d2020;
+
+    transform:
+        translateX(3px);
+}
+
+
+body.corrupted-mode .project h3 {
+
+    color:
+        #b93434;
+
+    border-bottom-color:
+        #411111;
+}
+
+
+body.corrupted-mode .project p {
+
+    color:
+        #783030;
+}
+
+
+body.corrupted-mode .project p strong {
+
+    color:
+        #a93636;
+}
+
+
+body.corrupted-mode .redacted {
+
+    color:
+        #9c2929 !important;
+
+    text-shadow:
+        0 0 5px
+        rgba(150,0,0,0.3);
+}
+
+
+/* =========================================================
+   LOCALIZAÇÕES CORROMPIDAS
+========================================================= */
+
+body.corrupted-mode #locations .project {
+
+    border-left-color:
+        #a12626;
+}
+
+
+body.corrupted-mode #locations .project h3 {
+
+    color:
+        #bd3b3b;
+}
+
+
+body.corrupted-mode #locations .project p {
+
+    color:
+        #7d3030;
+}
+
+
+body.corrupted-mode #locations .project p:last-child {
+
+    color:
+        #571818;
+}
+
+
+/* =========================================================
+   PESSOAL CORROMPIDO
+========================================================= */
+
+body.corrupted-mode .person-card {
+
+    background:
+        #0d0202;
+
+    border-color:
+        #481313;
+}
+
+
+body.corrupted-mode .person-card::before {
+
+    content:
+        "PERSONNEL FILE // CORRUPTED";
+
+    color:
+        #601919;
+}
+
+
+body.corrupted-mode .person-photo {
+
+    background:
+        repeating-linear-gradient(
+            0deg,
+            #0c0202,
+            #0c0202 2px,
+            #180404 3px
+        );
+
+    border-color:
+        #551616;
+
+    color:
+        #6d2020;
+}
+
+
+body.corrupted-mode .person-card h3 {
+
+    color:
+        #b93636;
+}
+
+
+body.corrupted-mode .person-card p {
+
+    color:
+        #702626;
+}
+
+
+/* =========================================================
+   REGISTRO DA CAVEIRA
+========================================================= */
+
+body.corrupted-mode .corrupted-record {
+
+    border-color:
+        #781d1d;
+
+    background:
+        linear-gradient(
+            90deg,
+            #120202,
+            #1c0303,
+            #0d0101
+        );
+
+    box-shadow:
+        0 0 30px
+        rgba(130,0,0,0.15);
+}
+
+
+body.corrupted-mode .corrupted-record::before {
+
+    background:
+        rgba(220,30,30,0.5);
+
+    animation:
+        corruptedLine 1.2s infinite;
+}
+
+
+body.corrupted-mode .corrupted-record::after {
+
+    background:
+        rgba(180,20,20,0.4);
+}
+
+
+@keyframes corruptedLine {
+
+    0% {
+        top: 20%;
+        opacity: 0.2;
+    }
+
+    30% {
+        top: 75%;
+        opacity: 0.8;
+    }
+
+    60% {
+        top: 42%;
+        opacity: 0.3;
+    }
+
+    100% {
+        top: 90%;
+        opacity: 0.6;
+    }
+}
+
+
+body.corrupted-mode .corrupted-photo {
+
+    border-color:
+        #721c1c;
+
+    background:
+        repeating-linear-gradient(
+            0deg,
+            #0c0202,
+            #0c0202 3px,
+            #1c0505 4px,
+            #1c0505 5px
+        );
+
+    animation:
+        corruptedPhoto 2s infinite;
+}
+
+
+@keyframes corruptedPhoto {
+
+    0%,
+    90%,
+    100% {
+        filter:
+            none;
+    }
+
+    92% {
+        filter:
+            contrast(1.8)
+            brightness(1.2);
+    }
+
+    94% {
+        filter:
+            contrast(0.7);
+    }
+}
+
+
+body.corrupted-mode .corrupted-photo::before {
+
+    color:
+        #651717;
+}
+
+
+body.corrupted-mode .corrupted-photo::after {
+
+    content:
+        "IDENTITY // UNRECOVERABLE";
+
+    color:
+        #9c2828;
+}
+
+
+body.corrupted-mode .corrupted-name {
+
+    color:
+        #cf3c3c !important;
+
+    text-shadow:
+        2px 0 #5c0000,
+        -1px 0 #250000;
+
+    animation:
+        corruptedName 1.4s infinite;
+}
+
+
+@keyframes corruptedName {
+
+    0%,
+    88%,
+    100% {
+        transform:
+            translateX(0);
+    }
+
+    90% {
+        transform:
+            translateX(-4px);
+    }
+
+    92% {
+        transform:
+            translateX(4px);
+    }
+}
+
+
+body.corrupted-mode .red-corruption {
+
+    color:
+        #a72a2a !important;
+
+    text-shadow:
+        1px 0 #5e0000,
+        -1px 0 #250000;
+}
+
+
+/* =========================================================
+   ÁREA RESTRITA CORROMPIDA
+========================================================= */
+
+body.corrupted-mode .locked {
+
+    background:
+        radial-gradient(
+            circle,
+            #180404,
+            #080101
+        );
+
+    border-color:
+        #6d1b1b;
+
+    box-shadow:
+        inset 0 0 40px
+        rgba(120,0,0,0.15);
+}
+
+
+body.corrupted-mode .locked::before {
+
+    content:
+        "LEVEL ████ // BREACH";
+
+    color:
+        #762020;
+
+    animation:
+        corruptedText 1.5s infinite;
+}
+
+
+body.corrupted-mode .locked::after {
+
+    content:
+        "UNAUTHORIZED SIGNAL";
+
+    color:
+        #621818;
+}
+
+
+body.corrupted-mode .lock-symbol {
+
+    color:
+        #9d2525;
+
+    filter:
+        grayscale(0);
+
+    opacity:
+        0.8;
+
+    text-shadow:
+        0 0 20px
+        rgba(180,0,0,0.5);
+
+    animation:
+        lockCorruption 1.5s infinite;
+}
+
+
+@keyframes lockCorruption {
+
+    0%,
+    80%,
+    100% {
+        transform:
+            translate(0);
+    }
+
+    82% {
+        transform:
+            translate(-4px,1px);
+    }
+
+    84% {
+        transform:
+            translate(4px,-1px);
+    }
+
+    86% {
+        transform:
+            translate(0);
+    }
+}
+
+
+body.corrupted-mode #code-message {
+
+    color:
+        #b83232 !important;
+}
+
+
+body.corrupted-mode #code-message::after {
+
+    background:
+        #641818;
+}
+
+
+/* =========================================================
+   ARQUIVO SECRETO CORROMPIDO
+========================================================= */
+
+body.corrupted-mode #secret-content {
+
+    animation:
+        corruptedArchiveAppear 1s ease;
+}
+
+
+@keyframes corruptedArchiveAppear {
+
+    0% {
+
+        opacity: 0;
+
+        transform:
+            scale(0.98)
+            translateY(10px);
+
+        filter:
+            brightness(2)
+            contrast(0.5);
+    }
+
+    35% {
+
+        opacity: 0.5;
+
+        filter:
+            brightness(0.7)
+            contrast(1.5);
+    }
+
+    100% {
+
+        opacity: 1;
+
+        transform:
+            scale(1)
+            translateY(0);
+
+        filter:
+            none;
+    }
+}
+
+
+body.corrupted-mode #secret-content .terminal-box {
+
+    border-color:
+        #761e1e;
+
+    box-shadow:
+
+        inset 0 0 30px
+        rgba(120,0,0,0.25),
+
+        0 0 30px
+        rgba(150,0,0,0.12);
+}
+
+
+body.corrupted-mode #secret-content .terminal-header {
+
+    background:
+        #190404;
+
+    color:
+        #9d2929;
+
+    border-bottom-color:
+        #591616;
+}
+
+
+/* =========================================================
+   ESTADO DE ACESSO CONCEDIDO
+========================================================= */
+
+#restricted-panel.access-granted {
+
+    border-color:
+        #444;
+
+    box-shadow:
+        0 0 25px
+        rgba(255,255,255,0.025);
+}
+
+
+body.corrupted-mode #restricted-panel.access-granted {
+
+    border-color:
+        #8a2222;
+
+    box-shadow:
+        0 0 35px
+        rgba(150,0,0,0.2);
+}
+
+
+/* =========================================================
+   GLITCH GLOBAL CORROMPIDO
+========================================================= */
+
+body.corrupted-mode.glitching {
+
+    animation:
+        corruptedGlobalGlitch
+        0.15s
+        steps(2)
+        infinite;
+}
+
+
+@keyframes corruptedGlobalGlitch {
+
+    0% {
+
+        transform:
+            translate(0);
+
+        filter:
+            none;
+    }
+
+    25% {
+
+        transform:
+            translate(-5px,1px);
+
+        filter:
+            contrast(1.5)
+            hue-rotate(-15deg);
+    }
+
+    50% {
+
+        transform:
+            translate(5px,-2px);
+
+        filter:
+            brightness(1.3)
+            contrast(1.2);
+    }
+
+    75% {
+
+        transform:
+            translate(-2px,2px);
+
+        filter:
+            contrast(0.7)
+            hue-rotate(10deg);
+    }
+
+    100% {
+
+        transform:
+            translate(0);
+
+        filter:
+            none;
+    }
+}
+
+
+/* =========================================================
+   LINHAS DE INTERFERÊNCIA
+========================================================= */
+
+body.corrupted-mode .content::before {
+
+    content:
+        "ERROR // SIGNAL LOST // PCL // ERROR // 170487";
+
+    position:
+        fixed;
+
+    top:
+        18%;
+
+    left:
+        -100%;
+
+    width:
+        300%;
+
+    font-size:
+        9px;
+
+    letter-spacing:
+        8px;
+
+    color:
+        rgba(170,20,20,0.08);
+
+    pointer-events:
+        none;
+
+    white-space:
+        nowrap;
+
+    animation:
+        corruptionSweep 8s linear infinite;
+
+    z-index:
+        0;
+}
+
+
+@keyframes corruptionSweep {
+
+    from {
+        transform:
+            translateX(0);
+    }
+
+    to {
+        transform:
+            translateX(35%);
+    }
+}
+
+
+/* =========================================================
+   PCL — ESTADO DE AMEAÇA
+========================================================= */
+
+body.corrupted-mode .file-card {
+
+    animation:
+        pclPulse 3s infinite;
+}
+
+
+@keyframes pclPulse {
+
+    0%,
+    85%,
+    100% {
+
+        box-shadow:
+            0 0 15px
+            rgba(120,0,0,0.08);
+    }
+
+    88% {
+
+        box-shadow:
+            0 0 30px
+            rgba(190,0,0,0.3);
+    }
+
+    91% {
+
+        box-shadow:
+            0 0 8px
+            rgba(120,0,0,0.05);
+    }
+}
+
+
+/* =========================================================
+   RESPONSIVIDADE
+========================================================= */
+
+@media (max-width: 800px) {
+
+    .site-header {
+
+        grid-template-columns: 1fr;
+
+        height: auto;
+
+        padding: 20px;
+
+        gap: 15px;
+
+        text-align: center;
+    }
+
+
+    .header-left,
+    .header-right {
+        text-align: center;
+    }
+
+
+    .archive-container {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    .sidebar {
+
+        border-right: none;
+
+        border-bottom: 1px solid #292929;
+    }
+
+
+    .sidebar nav {
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(2, 1fr);
+    }
+
+
+    .content {
+
+        padding:
+            25px 18px;
+    }
+
+
+    .site-footer {
+
+        height: auto;
+
+        padding: 15px;
+
+        flex-direction: column;
+
+        gap: 8px;
+    }
+
+
+    .document {
+
+        grid-template-columns: 1fr;
+
+        gap: 7px;
+    }
+
+
+    .document span:last-child {
+        text-align: left;
+    }
+
+
+    .file-card {
+
+        flex-wrap: wrap;
+    }
+
+
+    .file-card button {
+
+        width: 100%;
+    }
+
+
+    .person-card {
+
+        flex-direction: column;
+    }
+
+
+    .person-photo {
+
+        width: 100%;
+
+        height: 100px;
+    }
+
+
+    #secret-code {
+
+        width: 100%;
+
+        margin-bottom: 10px;
+    }
+
+
+    #submit-code {
+
+        margin-left: 0;
+
+        width: 100%;
+    }
+
+
+    body.corrupted-mode .content::before {
+
+        font-size:
+            7px;
+
+        letter-spacing:
+            4px;
+    }
+
+}
+
+
+/* =========================================================
+   TELAS MUITO PEQUENAS
+========================================================= */
+
+@media (max-width: 450px) {
+
+    .header-center h1 {
+
+        font-size: 17px;
+
+        letter-spacing: 4px;
+    }
+
+
+    .content h2 {
+
+        font-size: 17px;
+
+        letter-spacing: 3px;
+    }
+
+
+    .terminal-body {
+
+        padding: 20px;
+
+        font-size: 10px;
+    }
+
+
+    .project {
+
+        padding: 20px;
+    }
+
+
+    .loading-content {
+
+        letter-spacing: 2px;
+    }
+
+
+    .locked {
+
+        padding:
+            50px 15px;
+    }
+
+
+    body.corrupted-mode .header-center h1 {
+
+        font-size:
+            15px;
+    }
+
+}
